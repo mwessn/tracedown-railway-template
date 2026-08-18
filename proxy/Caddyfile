@@ -1,0 +1,17 @@
+# Railway's edge terminates TLS and forwards plain HTTP to {$PORT}; this
+# instance only routes by path. MONOLITH_HOST is the monolith service's
+# private domain (set it from a Railway reference variable).
+{
+	auto_https off
+}
+
+:{$PORT} {
+	# WebSocket → the realtime port. The monolith runs with WS_URL=/ws so the
+	# dashboard connects here on the page's own origin; Caddy handles the
+	# upgrade automatically.
+	@ws path /ws /ws/*
+	reverse_proxy @ws {$MONOLITH_HOST}:20870
+
+	# Everything else — dashboard, /api/v1, /ping — → the gateway port.
+	reverse_proxy {$MONOLITH_HOST}:20714
+}
